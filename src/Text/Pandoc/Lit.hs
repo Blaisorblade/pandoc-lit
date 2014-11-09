@@ -120,7 +120,7 @@ transformBlock _ (RawBlock (Format "tex") text)
   =   RawBlock (Format "tex") (unescapeComments $ text)
 transformBlock _ (RawBlock (Format "latex") text)
   =   RawBlock (Format "latex") (unescapeComments $ text)
-transformBlock _ (RawBlock format text)
+transformBlock _ (RawBlock (Format format) text)
   =   error $ "raw " ++ format ++ " not supported by pandoc-lit"
 transformBlock _ x
   =   x
@@ -139,7 +139,7 @@ transformInline config (Code attr code)
 transformInline config (Math t m) = Math t (escapeBar m)
 transformInline config (RawInline (Format "tex") text) = RawInline (Format "tex") $ unescapeComments $ text
 transformInline config (RawInline (Format "latex") text) = RawInline (Format "latex") $ unescapeComments $ text
-transformInline config (RawInline format text) = error $ "raw " ++ format ++ " not supported by pandoc-lit (" ++ text ++ ")"
+transformInline config (RawInline (Format format) text) = error $ "raw " ++ format ++ " not supported by pandoc-lit (" ++ text ++ ")"
 transformInline config (Link text (s1, s2)) = Link text (escapeBar s1, escapeBar s2)
 transformInline config x = x
 
