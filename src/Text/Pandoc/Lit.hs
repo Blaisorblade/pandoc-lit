@@ -675,7 +675,6 @@ readDataFile :: FilePath -> IO String
 readDataFile fname
   = do u <- getAppUserDataDirectory "pandoc"
        (readFileUTF8 $ u </> fname)
-         `catch` (\_ -> getDataFileName fname >>= readFileUTF8)
   `catch` (\_ -> getDataFileName fname >>= readFileUTF8)
 
 readTemplate :: Config -> IO (Maybe String)
