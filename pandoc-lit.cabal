@@ -45,6 +45,10 @@ Library
                       Text.Pandoc.Scripting.Structure
   Other-Modules:      Paths_pandoc_lit
   Build-Depends:      base == 4.*,
+                      -- We want whatever version of containers pandoc happens
+                      -- to use, as long as they don't change the API of
+                      -- Data.Set.insert. So specifying no version number seems safe.
+                      containers,
                       pandoc == 1.12.*,
                       pandoc-types == 1.12.*,
                       -- citeproc-hs >= 0.3.1 && < 0.4,

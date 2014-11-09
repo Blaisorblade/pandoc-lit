@@ -6,10 +6,9 @@
 module Text.Pandoc.Lit where
 
 import Text.Pandoc hiding (processWith)
-import Text.Pandoc.Biblio (processBiblio)
-import Text.Pandoc.Shared (findDataFile, CiteMethod (Citeproc, Natbib, Biblatex))
 
-import Text.CSL (readBiblioFile, refId, Reference)
+import Text.CSL (readBiblioFile, readCSLFile, refId, Reference)
+import Text.CSL.Pandoc (processCites)
 import Control.Monad (liftM, ap)
 
 import System.Environment (getArgs)
@@ -21,6 +20,7 @@ import System.Directory (getCurrentDirectory, doesFileExist, getAppUserDataDirec
 import System.FilePath (pathSeparator, (</>), (<.>))
 import System.Process (readProcess)
 
+import qualified Data.Set as Set
 import Data.List (intersperse, stripPrefix)
 import Data.Data (Data, Typeable)
 import Data.Maybe (fromMaybe, maybeToList)
@@ -274,26 +274,23 @@ transformDoc config
 onBlocks :: ([Block] -> [Block]) -> Pandoc -> Pandoc
 onBlocks f (Pandoc meta blocks) = Pandoc meta (f blocks)
 
-parserState = defaultParserState
-  { stateLiterateHaskell = True
-  , stateSmart = True
+readerOptions :: ReaderOptions
+readerOptions = def
+  { readerSmart = True
+  , readerExtensions = Ext_literate_haskell `Set.insert` readerExtensions def
   }
 
 readDoc :: Config -> String -> Pandoc
-readDoc config = readMarkdown 
-  parserState { stateCitations = case references config of
-                                   Just refs  ->  map refId refs
-                                   Nothing    ->  [] }
+readDoc config = readMarkdown readerOptions
 
 writeDoc :: Config -> Pandoc -> String
 writeDoc config = writeLaTeX options where
   options
-    = defaultWriterOptions
+    = def
       { writerStandalone = maybe False (const True) (template config)
       , writerTemplate = fromMaybe "" (template config)
       , writerVariables = variables config
       , writerNumberSections = True
-      , writerBiblioFiles = maybeToList (bibliography config)
       , writerCiteMethod = citeMethod config
       }
 
@@ -731,15 +728,21 @@ transformFile config file = do
                      then escapeComments text'' 
                      else text''
 
+  {-
   cslfile    <-  case csl config of
                    Just filename  ->  return filename
-                   Nothing        ->  findDataFile Nothing "default.csl"
+                   -- XXX The API was broken; It seems I'd need to reimplement this, but I can't figure out how it worked, if it ever did.
+                   --Nothing        ->  findDataFile Nothing "default.csl"
+  -}
   
   let doc    =   readDoc config text'''
   let doc'   =   transformDoc config doc
-  doc''      <-  case references config of
-                   Just refs | citeMethod config == Citeproc
-                              ->  processBiblio cslfile Nothing refs doc'
+  doc''      <-  case (references config, csl config) of
+                   (Just refs, Just cslfile) | citeMethod config == Citeproc
+                              ->
+                                do
+                                  style <- readCSLFile Nothing cslfile
+                                  return $ processCites style refs doc'
                    _          ->  return doc'
                    
   headerIncludes <- mapM readFile (includeInHeader config)
