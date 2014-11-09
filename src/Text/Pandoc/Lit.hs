@@ -2,7 +2,7 @@
 -- This code can be used under the terms of a 3-clause BSD license.
 -- See LICENSE for details.
 
-{-# LANGUAGE PatternGuards, DeriveDataTypeable #-}
+{-# LANGUAGE PatternGuards, DeriveDataTypeable, ScopedTypeVariables #-}
 module Text.Pandoc.Lit where
 
 import Text.Pandoc hiding (processWith)
@@ -16,6 +16,7 @@ import System.Environment (getArgs)
 import System.Console.GetOpt
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (stdout, stderr, hPutStrLn, openFile, IOMode(ReadMode), hSetEncoding, utf8, hSetNewlineMode, universalNewlineMode, hGetContents)
+import Control.Exception (catch, IOException, Exception)
 import System.Directory (getCurrentDirectory, doesFileExist, getAppUserDataDirectory)
 import System.FilePath (pathSeparator, (</>), (<.>))
 import System.Process (readProcess)
@@ -675,7 +676,7 @@ readDataFile :: FilePath -> IO String
 readDataFile fname
   = do u <- getAppUserDataDirectory "pandoc"
        (readFileUTF8 $ u </> fname)
-  `catch` (\_ -> getDataFileName fname >>= readFileUTF8)
+  `catch` (\(_ :: IOException) -> getDataFileName fname >>= readFileUTF8)
 
 readTemplate :: Config -> IO (Maybe String)
 readTemplate config = do
